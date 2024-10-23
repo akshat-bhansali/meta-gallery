@@ -11,23 +11,23 @@ import StoreWalls from "./components/walls/Storewalls";
 import StoreWalls2 from "./components/walls/Storewalls2";
 import StoreWalls3 from "./components/walls/Storewalls3";
 import StoreWalls4 from "./components/walls/Storewalls4";
-import { ethers, parseEther } from "ethers";
+import { ethers, JsonRpcProvider } from "ethers";
 import abi from "./abi/NFTGallery.json"; // Make sure to import the ABI
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   const [shopMode] = useAtom(shopModeAtom);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [id, setId] = useState("");
   const [price, setPrice] = useState("");
-  const [likes,setLikes] = useState(0)
+  const [likes, setLikes] = useState(0);
 
   const showModal = (id, price, likes) => {
     setId(id);
     console.log(id);
     setPrice(price);
-    setLikes(likes)
+    setLikes(likes);
     setIsModalVisible(true);
   };
 
@@ -74,23 +74,28 @@ function App() {
         console.log("No account found");
         return;
       }
+      const address = accounts[0]
 
-      const contractAddress = "0x49397BF80Eebf92fa0c1C8DeE417cDDBB1d006c7"; // Replace with your contract address
       const contractABI = abi.abi;
+      const privateKey =
+        "529038177e54eb14bb591eaf0e7517112d7f4189f372f4a15a7d0229236adf7f";
+      const alchemyProvider = new JsonRpcProvider(
+        "https://polygon-amoy.g.alchemy.com/v2/OlHr_15i85AUNY6JNMQ2isTduKxgWGFy"
+      );
+      const contractAddress = "0x49397BF80Eebf92fa0c1C8DeE417cDDBB1d006c7";
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const address = await signer.getAddress();
-      setAccount(address); // Set the connected account
-      socket.emit("characterAvatarUpdate", null, address);
-      localStorage.setItem("address", address);
+      const signer = new ethers.Wallet(privateKey, alchemyProvider);
+      // console.log(abi.abi)
       const contract = new ethers.Contract(
         contractAddress,
         contractABI,
         signer
       );
+      setAccount(address); // Set the connected account
+      socket.emit("characterAvatarUpdate", null, address);
+      localStorage.setItem("address", address);
       localStorage.setItem("contract", JSON.stringify(contract));
-      setState({ provider, signer, contract, address });
+      setState({ alchemyProvider, signer, contract, address });
     } catch (error) {
       console.error("Error connecting to Metamask:", error);
     }
@@ -156,14 +161,14 @@ function App() {
   const handleGetMaxBid = async (id) => {
     try {
       const fetchedMaxBid = await state.contract.getMaxBid(id);
-      
+
       // Convert the fetched value from Wei to Ether for display
       const maxBidInEther = ethers.formatEther(fetchedMaxBid);
-      
+
       // After fetching, store the max bid and open the modal
       setMaxBid(maxBidInEther);
       setIsMaxBidModalVisible(true);
-      
+
       console.log("Max bid fetched:", maxBidInEther);
     } catch (error) {
       console.error("Error fetching max bid:", error);
@@ -174,18 +179,16 @@ function App() {
       const tx = await state.contract.likeArt(id);
       await tx.wait();
       console.log("Art liked successfully!");
-  
+
       // Optionally, fetch the updated number of likes
     } catch (error) {
       console.error("Error liking art:", error);
     }
   };
-  
-  
 
   return (
     <>
-    <ToastContainer/>
+      <ToastContainer />
       <Navbar connectWallet={connectWallet} account={account} state={state} />
       <Modal
         title="Frame Modal"
@@ -237,30 +240,28 @@ function App() {
 
         {/* View Max Bid Button */}
         <button
-    className="bg-red-500 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition duration-300 mt-4 w-full"
-    onClick={() => handleGetMaxBid(id)}
-  >
-    {maxBid ? `Max Bid: ${maxBid} ETH` : "View Max Bid"}
-  </button>
-  <div className="mt-4 flex items-center space-x-2">
-    <button
-      className="flex items-center bg-pink-500 text-white font-bold py-2 px-4 rounded hover:bg-pink-700 transition duration-300"
-      onClick={() => handleLike(id)}
-    >
-      {/* Heart SVG */}
-      <svg
-        className="w-6 h-6 fill-current text-white mr-2"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-      >
-        <path
-          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-        />
-      </svg>
-      {/* Number of likes */}
-      <span>{likes}</span>
-    </button>
-  </div>
+          className="bg-red-500 text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition duration-300 mt-4 w-full"
+          onClick={() => handleGetMaxBid(id)}
+        >
+          {maxBid ? `Max Bid: ${maxBid} ETH` : "View Max Bid"}
+        </button>
+        <div className="mt-4 flex items-center space-x-2">
+          <button
+            className="flex items-center bg-pink-500 text-white font-bold py-2 px-4 rounded hover:bg-pink-700 transition duration-300"
+            onClick={() => handleLike(id)}
+          >
+            {/* Heart SVG */}
+            <svg
+              className="w-6 h-6 fill-current text-white mr-2"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+            {/* Number of likes */}
+            <span>{likes}</span>
+          </button>
+        </div>
 
         {/* Bidders Modal */}
         <Modal

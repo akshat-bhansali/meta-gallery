@@ -81,6 +81,7 @@ export const UI = ({state, account}) => {
       console.log("Transaction Success:", tx);
       const count = await contract.totalPosts();
       console.log("Total Posts:", count);
+      console.log(typeof(vals.x))
       const tx2 = await contract.setCoordinates(Number(count),vals.x,vals.y,vals.rotation)
       await tx2.wait()
       console.log("Transaction Success:", tx2);
